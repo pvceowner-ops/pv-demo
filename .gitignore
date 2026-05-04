@@ -1,0 +1,11 @@
+# OS / editor crap
+.DS_Store
+Thumbs.db
+*.swp
+.vscode/
+.idea/
+
+# nothing to build, but keep node_modules out just in case anyone
+# accidentally `npm init`s in here
+node_modules/
+package-lock.json

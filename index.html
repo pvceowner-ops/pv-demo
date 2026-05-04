@@ -1,0 +1,61 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>pv-os · live demo</title>
+<meta name="description" content="Live status of the PV OS production stack at api.pvlmtd.com." />
+<link rel="stylesheet" href="styles.css" />
+</head>
+<body>
+
+<header>
+  <h1>pv-os <span class="muted">· live demo</span></h1>
+  <p class="muted">closed-club store · production at <code>api.pvlmtd.com</code></p>
+</header>
+
+<main>
+
+  <section class="card" id="healthz-card">
+    <h2>healthcheck</h2>
+    <div class="hc-grid">
+      <div class="hc-status">
+        <span class="dot" id="hc-dot" data-state="pending"></span>
+        <span id="hc-state">…</span>
+      </div>
+      <div class="hc-line"><span class="muted">db</span>     <span id="hc-db">·</span></div>
+      <div class="hc-line"><span class="muted">redis</span>  <span id="hc-redis">·</span></div>
+      <div class="hc-line"><span class="muted">latency</span><span id="hc-ms">— ms</span></div>
+    </div>
+    <p class="muted small">auto-refresh every 5s · last <span id="hc-count">0</span> probes</p>
+    <svg id="spark" viewBox="0 0 600 60" preserveAspectRatio="none" aria-label="latency sparkline">
+      <polyline id="spark-line" fill="none" stroke="currentColor" stroke-width="1.5" points="" />
+    </svg>
+  </section>
+
+  <section class="card">
+    <h2>rate-limit burst</h2>
+    <p class="muted small">
+      slowapi caps the API at 60 req/min/IP. This button fires 50 parallel
+      requests in one go — first ~50 hit <code>200</code>, but if you click
+      it twice in a row you'll watch the limiter kick in with <code>429</code>.
+    </p>
+    <button id="burst-btn" type="button">Run 50-burst</button>
+    <div class="bar-chart" id="burst-out" aria-live="polite"></div>
+  </section>
+
+</main>
+
+<footer>
+  <span><a href="https://api.pvlmtd.com/healthz" target="_blank" rel="noopener">api</a></span>
+  <span class="sep">·</span>
+  <span><a href="https://github.com/pvceowner-ops/pv-demo" target="_blank" rel="noopener">repo</a></span>
+  <span class="sep">·</span>
+  <span><a href="https://github.com/pvceowner-ops/pv-api" target="_blank" rel="noopener">pv-api source</a></span>
+  <span class="sep">·</span>
+  <span class="muted">© 2026 PV</span>
+</footer>
+
+<script src="app.js"></script>
+</body>
+</html>
