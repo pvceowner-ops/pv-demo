@@ -1,0 +1,559 @@
+<!doctype html>
+<html lang="ru">
+<head>
+<meta charset="utf-8" />
+<title>PV OS — где мы и куда идём</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@11/dist/mermaid.min.js"></script>
+<script src="https://d3js.org/d3.v7.min.js"></script>
+<style>
+  :root {
+    --bg: #0f172a;
+    --panel: #111827;
+    --text: #e5e7eb;
+    --muted: #9ca3af;
+    --accent: #38bdf8;
+    --ok: #22c55e;
+    --warn: #f59e0b;
+    --bad: #ef4444;
+    --border: #1f2937;
+  }
+  html, body { background: var(--bg); color: var(--text); margin: 0; padding: 0; font-family: ui-sans-serif, system-ui, -apple-system, "Segoe UI", Roboto, sans-serif; }
+  header { padding: 28px 36px 8px; }
+  header h1 { font-size: 22px; margin: 0 0 4px; }
+  header .meta { color: var(--muted); font-size: 13px; }
+  main { padding: 18px 36px 60px; max-width: 1280px; margin: 0 auto; }
+  section { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 18px 22px 22px; margin-bottom: 22px; }
+  section h2 { font-size: 16px; margin: 0 0 4px; color: var(--accent); }
+  section .blurb { color: var(--muted); font-size: 13px; margin: 0 0 14px; }
+  .legend { display: flex; flex-wrap: wrap; gap: 10px 16px; font-size: 12px; color: var(--muted); margin-top: 8px; }
+  .legend span::before { content: ""; display: inline-block; width: 10px; height: 10px; border-radius: 50%; margin-right: 6px; vertical-align: middle; }
+  .legend .ok::before  { background: var(--ok); }
+  .legend .warn::before{ background: var(--warn); }
+  .legend .bad::before { background: var(--bad); }
+  .mermaid { background: transparent; }
+  footer { color: var(--muted); font-size: 12px; padding: 8px 36px 28px; text-align: right; }
+  code { background: #0b1220; padding: 1px 5px; border-radius: 4px; color: #cbd5e1; font-size: 12px; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>PV OS — где мы и куда идём</h1>
+  <div class="meta">snapshot 2026-05-05 (вечер, observability дотягивание) · org <code>pvceowner-ops</code> · стек <code>pv-console</code> + <code>pv-api</code> + <code>pv-shared</code> + <code>pv-demo</code> + <code>pv-os-labs</code></div>
+</header>
+
+<main>
+
+  <section>
+    <h2>1. Архитектура — что это вообще такое</h2>
+    <p class="blurb">Кто с кем разговаривает. Сплошные стрелки — реальные коннекты. Пунктир — намерение, ещё не работает.</p>
+    <div class="mermaid">
+flowchart LR
+  classDef done fill:#064e3b,stroke:#22c55e,color:#ecfdf5;
+  classDef wip  fill:#7c2d12,stroke:#f59e0b,color:#fff7ed;
+  classDef todo fill:#1f2937,stroke:#6b7280,color:#9ca3af,stroke-dasharray:4 3;
+
+  user(["👤 пользователь"]):::done
+  console["💻 pv-console<br/><sub>Typer + Textual</sub><br/><sub>Draft PR #1</sub>"]:::done
+  shared["📦 pv-shared<br/><sub>Pydantic DTO</sub><br/><sub>пилит PRC, v0.1.0</sub>"]:::wip
+  api["🛰 pv-api<br/><sub>FastAPI + asyncpg</sub><br/><sub>Draft PR #1</sub>"]:::done
+  pg[("🐘 Postgres 16")]:::done
+  redis[("🟥 Redis 7")]:::done
+  ghcr["📦 ghcr.io/pvceowner-ops/pv-api<br/><sub>образ</sub>"]:::wip
+  vps["☁️ VPS<br/><sub>не provisioned</sub>"]:::todo
+
+  user -- "запускает .exe" --> console
+  console -- "сегодня: локальная SQLite" --> sqlite[("💾 SQLite<br/>%LOCALAPPDATA%/PV/db.sqlite")]:::done
+  console -. "завтра: HTTPS + X-API-Key" .-> api
+  api -- "asyncpg" --> pg
+  api -- "redis-py (healthz)" --> redis
+  shared -. "DTO для обоих" .-> console
+  shared -. "DTO для обоих" .-> api
+  api -- "Docker build → push" --> ghcr
+  ghcr -. "docker compose pull" .-> vps
+  vps -. "uvicorn pv_api.main:app" .-> api
+    </div>
+    <div class="legend">
+      <span class="ok">сделано / работает</span>
+      <span class="warn">в процессе / не интегрировано</span>
+      <span class="bad">отсутствует / не provisioned</span>
+    </div>
+  </section>
+
+  <section>
+    <h2>2. DevOps-скелет — что есть, чего нет</h2>
+    <p class="blurb">Чек-лист по слоям. Зелёное — закрыто; жёлтое — частично; красное — пусто.</p>
+    <div class="mermaid">
+flowchart TB
+  classDef ok   fill:#064e3b,stroke:#22c55e,color:#ecfdf5;
+  classDef wip  fill:#7c2d12,stroke:#f59e0b,color:#fff7ed;
+  classDef bad  fill:#7f1d1d,stroke:#ef4444,color:#fee2e2;
+
+  subgraph SRC["1. Source / VCS"]
+    direction LR
+    s1["3 репо в pvceowner-ops"]:::ok
+    s2["pv/* → PR в main"]:::ok
+    s3[".gitattributes (LF)"]:::ok
+    s4["branch protection на main"]:::bad
+    s1 ~~~ s2 ~~~ s3 ~~~ s4
+  end
+
+  subgraph QA["2. Качество кода"]
+    direction LR
+    q1["pre-commit (ruff + mypy)"]:::ok
+    q2["ruff check + format"]:::ok
+    q3["mypy --strict"]:::ok
+    q4["pytest + coverage ≥70"]:::ok
+    q5["pip-audit / SCA"]:::bad
+    q6["dependabot"]:::bad
+    q1 ~~~ q2 ~~~ q3 ~~~ q4 ~~~ q5 ~~~ q6
+  end
+
+  subgraph BUILD["3. CI / Build"]
+    direction LR
+    b1["test workflow на PR/push"]:::ok
+    b2["pv-api: matrix 3.12 / 3.13"]:::ok
+    b3["pv-api: PG + Redis services"]:::ok
+    b4["alembic upgrade в CI"]:::bad
+    b5["build-push образа в GHCR"]:::wip
+    b6["образ ещё не публиковался<br/>(main пуст)"]:::wip
+    b1 ~~~ b2 ~~~ b3 ~~~ b4 ~~~ b5 ~~~ b6
+  end
+
+  subgraph RUN["4. Runtime / Deploy"]
+    direction LR
+    r1["Dockerfile (multi-stage, non-root, HEALTHCHECK)"]:::ok
+    r2["docker-compose локалка (PG + Redis)"]:::ok
+    r3["прод-compose для VPS"]:::bad
+    r4["VPS provisioned"]:::bad
+    r5["deploy job (TODO[PV])"]:::bad
+    r6["накат миграций при deploy"]:::bad
+    r1 ~~~ r2 ~~~ r3 ~~~ r4 ~~~ r5 ~~~ r6
+  end
+
+  subgraph OBS["5. Observability"]
+    direction LR
+    o1["structlog → JSON в stdout"]:::ok
+    o2["Sentry init по DSN"]:::ok
+    o3["pv-console: rotating JSON file"]:::ok
+    o4["метрики (Prom/OTel)"]:::bad
+    o5["централизованные логи"]:::bad
+    o6["алерты"]:::bad
+    o1 ~~~ o2 ~~~ o3 ~~~ o4 ~~~ o5 ~~~ o6
+  end
+
+  subgraph SEC["6. Безопасность / данные"]
+    direction LR
+    sec1["X-API-Key middleware"]:::ok
+    sec2[".env.example, .env в gitignore"]:::ok
+    sec3["secret scanning / gitleaks"]:::bad
+    sec4["GitHub secrets для VPS"]:::bad
+    sec5["бэкапы Postgres"]:::bad
+    sec6["план восстановления"]:::bad
+    sec1 ~~~ sec2 ~~~ sec3 ~~~ sec4 ~~~ sec5 ~~~ sec6
+  end
+
+  SRC --> QA --> BUILD --> RUN --> OBS --> SEC
+    </div>
+  </section>
+
+  <section>
+    <h2>3. Pipeline — куда идёт код от commit до пользователя</h2>
+    <p class="blurb">Жирное и зелёное — pipeline сейчас живой end-to-end. Снимок 2026-04-29 вечер.</p>
+    <div class="mermaid">
+flowchart LR
+  classDef live fill:#064e3b,stroke:#22c55e,color:#ecfdf5;
+  classDef wait fill:#1f2937,stroke:#6b7280,color:#9ca3af,stroke-dasharray:4 3;
+
+  dev(["dev-машина"]):::live
+  branch["pv/feature-branch"]:::live
+  pr["PR в main"]:::live
+  ci["CI: ruff + format + mypy --strict<br/>+ pip-audit + pytest + gitleaks<br/><sub>matrix py3.12/3.13 · services PG+Redis</sub>"]:::live
+  merge["squash-merge<br/><sub>linear history</sub>"]:::live
+  main["main"]:::live
+  build["build Docker image<br/><sub>buildx + cache</sub>"]:::live
+  push["push → ghcr.io/pvceowner-ops/pv-api:&lt;sha&gt;"]:::live
+  scp["SCP compose + Caddyfile → VPS:/opt/pv/"]:::live
+  ssh["SSH: docker compose pull/up<br/>+ alembic upgrade head"]:::live
+  smoke["smoke /healthz × 5 retries"]:::live
+  prod["api.pvlmtd.com (live)"]:::live
+
+  dev --> branch --> pr --> ci --> merge --> main --> build --> push --> scp --> ssh --> smoke --> prod
+    </div>
+  </section>
+
+  <section>
+    <h2>4. Снимок состояния и backlog (на 2026-05-04)</h2>
+    <p class="blurb">Слева — закрытые этапы. Посередине — что в backlog без блокеров. Справа — заблокировано/отложено. Нумерация вдоль колонок — порядок реализации.</p>
+    <div class="mermaid">
+flowchart LR
+  classDef done fill:#064e3b,stroke:#22c55e,color:#ecfdf5;
+  classDef now fill:#0c4a6e,stroke:#38bdf8,color:#e0f2fe;
+  classDef block fill:#1f2937,stroke:#6b7280,color:#9ca3af,stroke-dasharray:4 3;
+
+  subgraph DONE["✅ закрыто"]
+    direction TB
+    d1["pv-api scaffold + auto-deploy"]:::done
+    d2["pv-console scaffold + orders show"]:::done
+    d3["Branch protection + repo settings + Dependabot"]:::done
+    d4["pip-audit + gitleaks в CI"]:::done
+    d5["tasks.py (invoke) — обоим репо"]:::done
+    d6["прод docker-compose + Caddy auto-TLS"]:::done
+    d7["VPS pv-api-prod (Vultr Amsterdam)"]:::done
+    d8["GitHub Secrets для deploy"]:::done
+    d9["Auth e2e test (4 сценария)"]:::done
+    d10["Idle stability (4h без leak)"]:::done
+    d11["Sentry DSN + verified delivery"]:::done
+    d12["Local backups (cron 03:00 UTC, retention 14d)"]:::done
+    d13["Backup recovery drill"]:::done
+    d14["Offsite backups → Vultr Object Storage"]:::done
+    d15["init: true (zombies fix, PR #13)"]:::done
+    d16["workflow_dispatch (manual rollback)"]:::done
+    d17["HSTS на api.pvlmtd.com (PR #15, max-age=1y)"]:::done
+    d18["pv-pg-backup.sh + cron в репо (PR #16)"]:::done
+    d19["Caddy healthcheck → admin API :2019 (PR #14)"]:::done
+    d20["create_app() Sentry-smoke в CI (PR #20)"]:::done
+    d21["HANDOVER.md в репо (PR #21)"]:::done
+    d22["Sentry max-out закрыт (PR #22 + #27)<br/><sub>6 integrations + attach_stacktrace + profiles knob</sub>"]:::done
+    d23["prod-deps-smoke CI guard (PR #27)<br/><sub>дев/прод env divergence закрыт</sub>"]:::done
+    d24["logrotate для pv-pg-backup.log (PR #28)"]:::done
+    d25["HANDOVER.md rebuild с постмортемом (PR #29)"]:::done
+    d26["Grafana monitoring stack live (PR #17 + #33)<br/><sub>node_exporter + cadvisor + alloy → Grafana Cloud Mimir</sub>"]:::done
+    d27["GHCR weekly retention workflow (PR #32)"]:::done
+    d28["Backup encryption opt-in via gpg (PR #31)"]:::done
+    d29["CORS + slowapi + container resource limits (PR #30)"]:::done
+    d30["/healthz `version` field + PV_API_TAG passthrough (PR #34, #35)"]:::done
+    d31["pv-demo public site live + GH Pages CI"]:::done
+    d32["pv-demo v2 widgets: deploy SHA, uptime %, request budget"]:::done
+    d33["Sentry alert rule + email smoke verified end-to-end"]:::done
+    d34["Grafana token rotation (revoked old, alloy on new)"]:::done
+    d35["pv-os-labs repo (Personal AI Environment, acme-labs adaptation)"]:::done
+    d36["Dockerfile multi-stage Alpine (PR #38)<br/><sub>image 304MB → ~150MB</sub>"]:::done
+    d37["request_id middleware (PR #37, on auto-merge)<br/><sub>X-Request-ID echo + structlog/Sentry binding</sub>"]:::done
+    d38["Telegram notify on deploy failure (PR #40, on auto-merge)"]:::done
+    d39["Cloudflare DNS migration started (NS propagation 1-6h)<br/><sub>AAAA + CNAME demo.pvlmtd.com следом</sub>"]:::done
+    d1 ~~~ d2 ~~~ d3 ~~~ d4 ~~~ d5 ~~~ d6 ~~~ d7 ~~~ d8 ~~~ d9 ~~~ d10 ~~~ d11 ~~~ d12 ~~~ d13 ~~~ d14 ~~~ d15 ~~~ d16 ~~~ d17 ~~~ d18 ~~~ d19 ~~~ d20 ~~~ d21 ~~~ d22 ~~~ d23 ~~~ d24 ~~~ d25 ~~~ d26 ~~~ d27 ~~~ d28 ~~~ d29 ~~~ d30 ~~~ d31 ~~~ d32 ~~~ d33 ~~~ d34 ~~~ d35 ~~~ d36 ~~~ d37 ~~~ d38 ~~~ d39
+  end
+
+  subgraph BACKLOG["🟡 в backlog (без блокеров)"]
+    direction TB
+    b2["node_exporter + cadvisor + Grafana Alloy<br/><sub>PR #17 в Draft, ждёт credentials с pvceownerops.grafana.net</sub>"]:::now
+    b3["double-green deploy gate<br/><sub>lower priority — prod-deps-smoke закрыл ту же дыру</sub>"]:::now
+    b4["staging environment<br/><sub>чтобы regression типа PR #18/#23 ловились до прода</sub>"]:::now
+    b5["branch protection: добавить prod-deps-smoke к required<br/><sub>UI-клик в Settings → Branches → main</sub>"]:::now
+    b2 ~~~ b3 ~~~ b4 ~~~ b5
+  end
+
+  subgraph BLOCKED["🔴 ждёт внешних условий"]
+    direction TB
+    bl1["pv-shared v0.1.0<br/><sub>(пилит PRC)</sub>"]:::block
+    bl2["Order/Customer/Invite/Product модели в pv-api<br/><sub>(после pv-shared)</sub>"]:::block
+    bl3["pv-console ↔ pv-api через httpx<br/><sub>(после моделей)</sub>"]:::block
+    bl4["Mail на pvlmtd.com<br/><sub>(Squarespace настройка)</sub>"]:::block
+    bl5["Bot с криптозащитой на сервере<br/><sub>(метод не выбран)</sub>"]:::block
+    bl1 ~~~ bl2 ~~~ bl3 ~~~ bl4 ~~~ bl5
+  end
+    </div>
+  </section>
+
+  <section>
+    <h2>5. Постмортем PR #18 (2026-04-30): max-out Sentry → 502</h2>
+    <ul style="line-height:1.7">
+      <li><b>Что упало:</b> один <code>sentry_sdk.init</code> с шестью integrations за раз. Какая-то сломалась на import → app не стартовал в контейнере → Caddy 502 → smoke упал → deploy job <code>failed</code>, но контейнер уже был recreated и сломан.</li>
+      <li><b>Почему CI не поймал:</b> в pytest <code>PV_SENTRY_DSN</code> был пустой → <code>_init_sentry</code> возвращался ранним <code>return</code> → broken-import-путь никогда не выполнялся.</li>
+      <li><b>Как восстановили:</b> <code>gh run rerun &lt;id-предыдущего-успешного&gt;</code> → старый sha образа задеплоился → <code>/healthz</code> 200. Затем revert PR #18 в main (PR #19), чтобы следующий любой push не воспроизвёл.</li>
+      <li><b>Что добавили чтобы не повторилось:</b> PR #20 — <code>tests/test_app_smoke.py</code> заставляет <code>_init_sentry</code> пройти end-to-end с фейковым DSN и нулевыми sample-rates. Любой broken integration теперь падает в CI до того как PR смержится.</li>
+      <li><b>Что ещё хочется (в backlog):</b> staging-окружение (одна и та же compose, отдельный suffix-домен), куда деплой идёт первым, а в прод — только если staging зелёный N минут.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>5b. Постмортем 2026-05-04: dev/prod env divergence (PR #23-#25)</h2>
+    <p class="blurb">Импакт: ≈30 минут 502 на проде (10:06–10:36 UTC). Причина — целиком в <code>pyproject.toml</code>, ни строки кода рантайма не виновата.</p>
+    <div class="mermaid">
+flowchart LR
+  classDef ok      fill:#064e3b,stroke:#22c55e,color:#ecfdf5;
+  classDef bad     fill:#7f1d1d,stroke:#ef4444,color:#fee2e2;
+  classDef recover fill:#0c4a6e,stroke:#38bdf8,color:#e0f2fe;
+
+  pr22["PR #22<br/><sub>Sqlalchemy + traces<br/>release SHA</sub>"]:::ok
+  pr23["PR #23<br/><sub>HttpxIntegration</sub><br/><b>502</b>"]:::bad
+  pr24["PR #24<br/><sub>AsyncioIntegration</sub><br/><b>502</b>"]:::bad
+  pr25["PR #25<br/><sub>LoggingIntegration<br/>+ attach_stacktrace<br/>+ profiles knob</sub><br/><b>502</b>"]:::bad
+  rb["rollback<br/><sub>gh run rerun на PR #22<br/>build-deploy → прод 200</sub>"]:::recover
+  pr26["PR #26<br/><sub>revert main →<br/>код = образ в проде</sub>"]:::recover
+  pr27["PR #27<br/><sub>httpx в core deps<br/>+ интеграции восстановлены<br/>+ <b>prod-deps-smoke</b> CI guard</sub>"]:::ok
+  pr28["PR #28<br/><sub>logrotate для<br/>pv-pg-backup.log</sub>"]:::ok
+  pr29["PR #29<br/><sub>HANDOVER.md<br/>rebuild + постмортем</sub>"]:::ok
+
+  pr22 --> pr23 --> pr24 --> pr25 --> rb --> pr26 --> pr27 --> pr28 --> pr29
+    </div>
+    <ul style="line-height:1.7">
+      <li><b>Что упало:</b> PR #23 (<code>HttpxIntegration</code>), затем PR #24 (<code>AsyncioIntegration</code>), затем PR #25 (<code>LoggingIntegration</code> + <code>attach_stacktrace</code> + <code>profiles_sample_rate</code>) — каждый зелёный в CI, каждый 502 на проде. Cumulative: прод лежал с момента мерджа PR #23 до rollback'а на PR #22.</li>
+      <li><b>Корневая причина:</b> <code>sentry_sdk.integrations.httpx</code> импортирует пакет <code>httpx</code> на module-level и кидает <code>DidNotEnable("httpx is not installed")</code> если пакета нет. У нас <code>httpx&gt;=0.27</code> сидел только в <code>[project.optional-dependencies] dev</code>. CI ставит <code>pip install -e .[dev]</code> → httpx есть → импорт работает → smoke зелёный. Прод-Dockerfile ставит <code>pip install .</code> (без <code>[dev]</code>) → httpx нет → импорт падает → uvicorn не может загрузить <code>pv_api.main:app</code> → workers умирают → контейнер не healthy → Caddy 502.</li>
+      <li><b>Почему PR #20 smoke не поймал:</b> он гонится pytest'ом, а pytest есть только в <code>[dev]</code> — значит test environment всегда имеет <code>[dev]</code> packages. Тот же blind spot.</li>
+      <li><b>Метод диагностики, занявший 30 секунд:</b> на VPS запустить упавший образ изолированно, не трогая прод-контейнер: <code>docker run -d --name pv-api-debug --network pv_default --env-file /etc/pv/pv-api.env ghcr.io/.../pv-api:&lt;bad-sha&gt;</code>, затем <code>docker logs pv-api-debug --tail=120</code>. Получил traceback с конкретной строкой.</li>
+      <li><b>Восстановление:</b> <code>gh run rerun</code> на PR #22 build-deploy run → прод вернулся на a883e95. Затем PR #26 — revert трёх плохих в main. Затем PR #27 — fix-forward: <code>httpx&gt;=0.27</code> в core <code>dependencies</code>, все интеграции восстановлены, добавлен новый CI-job <code>prod-deps-smoke</code> (<code>pip install .</code> без <code>[dev]</code> + <code>python -c "from pv_api.main import create_app; create_app()"</code> с фейковым DSN).</li>
+      <li><b>Generalised lesson:</b> dev/prod env divergence — это <b>класс ошибок</b>, не разовый случай. Любой <code>from &lt;pkg&gt; import *</code> в коде рантайма, тянущий новую зависимость, должен <b>проверяться установкой prod-only deps в CI</b>. Иначе CI зелёный, прод красный.</li>
+      <li><b>Watcher-предупреждение:</b> <code>gh run watch --exit-status</code> в нашем auto-merge скрипте раньше выдавал «deploy: success» на PR #23/#24 — потому что контейнер ненадолго становился healthy в окне между deploy-step и smoke-step. Финальная истина — в <code>gh run view &lt;id&gt; --json conclusion -q .conclusion</code>.</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>6. Предписания себе после паузы / для следующей сессии</h2>
+    <p class="blurb">Чтобы при возврате не тратить полчаса на восстановление контекста. Эта же информация — в <code>HANDOVER.md</code> в репо.</p>
+    <ul style="line-height:1.7">
+      <li><b>Жив ли прод?</b> Первая команда — <code>curl https://api.pvlmtd.com/healthz</code>. Если 200 + JSON — всё работает. Если нет — <code>gh run list --workflow build-deploy.yml --limit 1</code>, потом ssh + <code>docker compose ... logs --tail=50 pv-api</code>.</li>
+      <li><b>Бэкапы.</b> Cron в 03:00 UTC. <code>rclone ls vultr:pv-backups/</code> и <code>ls -lh /var/backups/pv/</code> — там должна быть свежая дата.</li>
+      <li><b>Что делать первым:</b> если pv-shared v0.1.0 готов — Order модели в pv-api + миграция + httpx в pv-console. Если ещё нет — backlog: один integration Sentry за PR / Grafana credentials / staging env.</li>
+      <li><b>Грабли клиента (повторяются каждую сессию):</b> PS heredoc добавляет <code>\r</code> — оборачивать в <code>ssh ... "tr -d '\r' | bash -s"</code>. Auto-linker рендерит <code>*.com/.yml/.sh</code> как markdown — не верить отображению, проверять <code>cat -A</code>; multi-line скрипты передавать через <code>base64 -d</code>. Из Vultr UI копировать только конкретное поле, не весь s3cfg-блок (Secret уже четыре раза утекал в чат).</li>
+      <li><b>SSH рвётся</b> — в <code>~/.ssh/config</code> на Windows блок <code>Host pv-api-prod</code> с <code>ServerAliveInterval 30</code>.</li>
+      <li><b>Чего НЕ делать без явного запроса:</b> push в main любого репо (всё равно отобьёт branch protection); трогать pv-shared (зона PRC); менять <code>/etc/pv/*.env</code> на VPS без бэкапа предыдущей версии; <code>docker compose down -v</code> где-либо рядом с прод-volume'ами.</li>
+      <li><b>Если контекст-окно подходит к концу:</b> сказать «закругляемся», обновить memory, открыть новую сессию и сказать «продолжаем pv-api» — memory подхватится автоматически. <code>HANDOVER.md</code> в репо — для случая когда memory недоступна (другой dev / другая Claude).</li>
+    </ul>
+  </section>
+
+  <section>
+    <h2>7. Граф связей — d3 force-layout (interactive)</h2>
+    <p class="blurb">Тяни ноды чтобы перестроить раскладку, скролл — zoom, hover — tooltip. <b>Сплошные</b> стрелки = рабочий коннект, <b>пунктир</b> = планируется (DTO, httpx, crypto-bot), <b>точечный жёлтый</b> = миграция в процессе (Squarespace → Cloudflare → VPS).</p>
+    <div id="d3-graph" style="background:#0b1220;border:1px solid var(--border);border-radius:8px;min-height:660px;position:relative;overflow:hidden;">
+      <aside id="d3-drawer" style="position:absolute;top:0;right:0;bottom:0;width:340px;background:#0b1220;border-left:1px solid var(--border);transform:translateX(100%);transition:transform 220ms ease;z-index:10;overflow-y:auto;padding:18px 20px;box-sizing:border-box;">
+        <button id="d3-drawer-close" type="button" aria-label="Close" style="position:absolute;top:8px;right:14px;background:transparent;border:none;color:#9ca3af;font-size:22px;line-height:1;cursor:pointer;padding:4px 8px;">×</button>
+        <h3 id="d3-drawer-title" style="margin:0 0 4px;font-size:15px;color:#e5e7eb;padding-right:24px;"></h3>
+        <div id="d3-drawer-meta" style="font-size:10px;color:#94a3b8;margin-bottom:14px;letter-spacing:0.4px;text-transform:uppercase;"></div>
+        <div id="d3-drawer-desc" style="font-size:12px;color:#cbd5e1;line-height:1.5;margin-bottom:16px;"></div>
+        <div id="d3-drawer-in" style="margin-bottom:14px;"></div>
+        <div id="d3-drawer-out" style="margin-bottom:14px;"></div>
+        <div id="d3-drawer-links"></div>
+      </aside>
+    </div>
+    <div style="display:flex;flex-wrap:wrap;gap:10px 18px;font-size:12px;color:var(--muted);margin-top:12px;">
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#38bdf8;margin-right:6px;vertical-align:middle"></span>human</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#22c55e;margin-right:6px;vertical-align:middle"></span>repo</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#a78bfa;margin-right:6px;vertical-align:middle"></span>CI</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f59e0b;margin-right:6px;vertical-align:middle"></span>registry</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#fbbf24;margin-right:6px;vertical-align:middle"></span>infra</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#34d399;margin-right:6px;vertical-align:middle"></span>service</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#f472b6;margin-right:6px;vertical-align:middle"></span>external</span>
+      <span><span style="display:inline-block;width:10px;height:10px;border-radius:50%;background:#94a3b8;margin-right:6px;vertical-align:middle"></span>future / planned</span>
+    </div>
+  </section>
+
+</main>
+
+<footer>файл: <code>D:\pv\pv-devops-map.html</code> · обновлять руками после каждого зелёного шага</footer>
+
+<script>
+  mermaid.initialize({
+    startOnLoad: true,
+    theme: "dark",
+    themeVariables: {
+      darkMode: true,
+      background: "#111827",
+      primaryColor: "#1f2937",
+      primaryTextColor: "#e5e7eb",
+      primaryBorderColor: "#374151",
+      lineColor: "#9ca3af",
+      tertiaryColor: "#0b1220"
+    },
+    flowchart: { htmlLabels: true, curve: "basis", padding: 18 }
+  });
+</script>
+
+<script>
+(() => {
+  const container = document.getElementById('d3-graph');
+  if (!container || typeof d3 === 'undefined') return;
+  const W = 1200;
+  const H = 660;
+
+  const data = {
+    nodes: [
+      { id: "user",        label: "👤 you (mrkne)",       group: "human" },
+      { id: "prc",         label: "🤝 PRC (collab)",      group: "human" },
+      { id: "pv-console",  label: "💻 pv-console",        group: "repo" },
+      { id: "pv-api",      label: "🛰 pv-api",            group: "repo" },
+      { id: "pv-shared",   label: "📦 pv-shared",         group: "repo",     status: "wip" },
+      { id: "pv-demo",     label: "🎬 pv-demo",           group: "repo" },
+      { id: "pv-os-labs",  label: "📚 pv-os-labs",        group: "repo" },
+      { id: "github",      label: "GitHub Actions",       group: "ci" },
+      { id: "ghcr",        label: "GHCR pv-api img",      group: "registry" },
+      { id: "vps",         label: "☁️ VPS pv-api-prod",    group: "infra" },
+      { id: "caddy",       label: "Caddy 2 (TLS)",        group: "service" },
+      { id: "pv-api-c",    label: "pv-api container",     group: "service" },
+      { id: "postgres",    label: "🐘 Postgres 16",       group: "service" },
+      { id: "redis",       label: "🟥 Redis 7",           group: "service" },
+      { id: "node-exp",    label: "node_exporter",        group: "service" },
+      { id: "cadvisor",    label: "cadvisor",             group: "service" },
+      { id: "alloy",       label: "Grafana Alloy",        group: "service" },
+      { id: "vultr-os",    label: "Vultr Object Storage", group: "infra" },
+      { id: "grafana",     label: "Grafana Cloud",        group: "external" },
+      { id: "sentry",      label: "Sentry",               group: "external" },
+      { id: "squarespace", label: "Squarespace",          group: "external", status: "deprecating" },
+      { id: "cloudflare",  label: "Cloudflare DNS",       group: "external", status: "migrating" },
+      { id: "gh-pages",    label: "GitHub Pages",         group: "external" },
+      { id: "crypto-bot",  label: "🔒 crypto-bot",        group: "future",   status: "planned" }
+    ],
+    links: [
+      { source: "user",        target: "pv-console", label: "запускает .exe" },
+      { source: "user",        target: "pv-demo",    label: "browses" },
+      { source: "user",        target: "pv-os-labs", label: "operator manual" },
+      { source: "user",        target: "cloudflare", label: "api/demo.pvlmtd.com" },
+      { source: "prc",         target: "pv-shared",  label: "owns" },
+      { source: "prc",         target: "pv-api",     label: "co-owns" },
+      { source: "pv-shared",   target: "pv-console", label: "DTO",          kind: "planned" },
+      { source: "pv-shared",   target: "pv-api",     label: "DTO",          kind: "planned" },
+      { source: "pv-console",  target: "pv-api",     label: "httpx",        kind: "planned" },
+      { source: "pv-api",      target: "github",     label: "push → CI" },
+      { source: "pv-demo",     target: "github",     label: "push → CI" },
+      { source: "github",      target: "ghcr",       label: "build & push" },
+      { source: "github",      target: "vps",        label: "SCP+SSH deploy" },
+      { source: "github",      target: "gh-pages",   label: "pages.yml" },
+      { source: "ghcr",        target: "vps",        label: "docker pull" },
+      { source: "vps",         target: "caddy",      label: "runs" },
+      { source: "vps",         target: "pv-api-c",   label: "runs" },
+      { source: "vps",         target: "postgres",   label: "runs" },
+      { source: "vps",         target: "redis",      label: "runs" },
+      { source: "vps",         target: "node-exp",   label: "runs" },
+      { source: "vps",         target: "cadvisor",   label: "runs" },
+      { source: "vps",         target: "alloy",      label: "runs" },
+      { source: "caddy",       target: "pv-api-c",   label: "TLS proxy" },
+      { source: "pv-api-c",    target: "postgres",   label: "asyncpg" },
+      { source: "pv-api-c",    target: "redis",      label: "redis-py" },
+      { source: "pv-api-c",    target: "sentry",     label: "errors+traces" },
+      { source: "node-exp",    target: "alloy",      label: "scrape" },
+      { source: "cadvisor",    target: "alloy",      label: "scrape" },
+      { source: "alloy",       target: "grafana",    label: "remote_write" },
+      { source: "vps",         target: "vultr-os",   label: "rclone offsite" },
+      { source: "pv-demo",     target: "gh-pages",   label: "auto-deploy" },
+      { source: "squarespace", target: "cloudflare", label: "NS delegation", kind: "migration" },
+      { source: "cloudflare",  target: "vps",        label: "A/AAAA",        kind: "migration" },
+      { source: "crypto-bot",  target: "vps",        label: "хост (TBD)",    kind: "planned" },
+      { source: "user",        target: "crypto-bot", label: "TBD transport", kind: "planned" }
+    ]
+  };
+
+  const colorMap = {
+    human:    "#38bdf8",
+    repo:     "#22c55e",
+    ci:       "#a78bfa",
+    registry: "#f59e0b",
+    infra:    "#fbbf24",
+    service:  "#34d399",
+    external: "#f472b6",
+    future:   "#94a3b8"
+  };
+
+  const statusStroke = {
+    planned:     "#fbbf24",
+    wip:         "#f59e0b",
+    migrating:   "#fbbf24",
+    deprecating: "#ef4444"
+  };
+
+  const svg = d3.select(container)
+    .append("svg")
+    .attr("viewBox", `0 0 ${W} ${H}`)
+    .attr("width", "100%")
+    .attr("height", H)
+    .style("display", "block");
+
+  svg.append("defs").append("marker")
+    .attr("id", "arrow")
+    .attr("viewBox", "0 -5 10 10")
+    .attr("refX", 22)
+    .attr("refY", 0)
+    .attr("markerWidth", 7)
+    .attr("markerHeight", 7)
+    .attr("orient", "auto")
+    .append("path")
+    .attr("d", "M0,-5L10,0L0,5")
+    .attr("fill", "#9ca3af");
+
+  const g = svg.append("g");
+
+  svg.call(
+    d3.zoom()
+      .scaleExtent([0.4, 3])
+      .on("zoom", e => g.attr("transform", e.transform))
+  );
+
+  const sim = d3.forceSimulation(data.nodes)
+    .force("link", d3.forceLink(data.links).id(d => d.id)
+      .distance(d => d.kind === "planned" ? 140 : 105)
+      .strength(0.5))
+    .force("charge", d3.forceManyBody().strength(-520))
+    .force("center", d3.forceCenter(W / 2, H / 2))
+    .force("x", d3.forceX(W / 2).strength(0.04))
+    .force("y", d3.forceY(H / 2).strength(0.08))
+    .force("collide", d3.forceCollide().radius(d => Math.max(50, (d.label || '').length * 4.6 + 20)));
+
+  const link = g.append("g")
+    .selectAll("line")
+    .data(data.links)
+    .join("line")
+    .attr("stroke-width", 1.4)
+    .attr("stroke-opacity", 0.75)
+    .attr("stroke-dasharray", d =>
+      d.kind === "planned"   ? "5 4" :
+      d.kind === "migration" ? "2 3" : null)
+    .attr("stroke", d =>
+      d.kind === "planned"   ? "#94a3b8" :
+      d.kind === "migration" ? "#fbbf24" : "#9ca3af")
+    .attr("marker-end", "url(#arrow)");
+
+  link.append("title").text(d =>
+    `${typeof d.source === 'object' ? d.source.id : d.source} → ${typeof d.target === 'object' ? d.target.id : d.target}` +
+    `\n${d.label || ''}` +
+    (d.kind ? `\nkind: ${d.kind}` : '')
+  );
+
+  const node = g.append("g")
+    .selectAll("g")
+    .data(data.nodes)
+    .join("g")
+    .style("cursor", "grab")
+    .call(d3.drag()
+      .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
+      .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
+      .on("end",   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+
+  node.append("circle")
+    .attr("r", d => (d.group === "infra" || d.group === "human") ? 16 : 13)
+    .attr("fill", d => colorMap[d.group] || "#999")
+    .attr("stroke", d => statusStroke[d.status] || "#0f172a")
+    .attr("stroke-width", 2)
+    .attr("stroke-dasharray", d => d.status === "planned" ? "3 2" : null);
+
+  node.append("text")
+    .attr("x", 20)
+    .attr("y", 4)
+    .attr("fill", "#e5e7eb")
+    .attr("font-size", 12)
+    .attr("paint-order", "stroke")
+    .attr("stroke", "#0b1220")
+    .attr("stroke-width", 3)
+    .style("pointer-events", "none")
+    .text(d => d.label);
+
+  node.append("title").text(d =>
+    `${d.label}\nгруппа: ${d.group}` + (d.status ? `\nстатус: ${d.status}` : '')
+  );
+
+  sim.on("tick", () => {
+    data.nodes.forEach(d => {
+      d.x = Math.max(20, Math.min(W - 20, d.x));
+      d.y = Math.max(20, Math.min(H - 20, d.y));
+    });
+    link
+      .attr("x1", d => d.source.x)
+      .attr("y1", d => d.source.y)
+      .attr("x2", d => d.target.x)
+      .attr("y2", d => d.target.y);
+    node.attr("transform", d => `translate(${d.x}, ${d.y})`);
+  });
+})();
+</script>
+
+</body>
+</html>
