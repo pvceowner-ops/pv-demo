@@ -4,14 +4,14 @@
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width, initial-scale=1" />
 <title>pv-os · live demo</title>
-<meta name="description" content="Live status of the PV OS production stack at api.pvlmtd.com." />
+<meta name="description" content="Live status of the pv-os production stack at api.pvlmtd.com." />
 <link rel="stylesheet" href="styles.css" />
 </head>
 <body>
 
 <header>
   <h1>pv-os <span class="muted">· live demo</span></h1>
-  <p class="muted">closed-club store · production at <code>api.pvlmtd.com</code></p>
+  <p class="muted">production backend at <code>api.pvlmtd.com</code></p>
 </header>
 
 <main>
@@ -31,6 +31,32 @@
     <svg id="spark" viewBox="0 0 600 60" preserveAspectRatio="none" aria-label="latency sparkline">
       <polyline id="spark-line" fill="none" stroke="currentColor" stroke-width="1.5" points="" />
     </svg>
+    <div class="version-line">
+      <span class="muted small">deployed:</span>
+      <code id="hc-version" class="version-tag" title="click to copy">—</code>
+    </div>
+  </section>
+
+  <section class="card" id="stats-card">
+    <h2>stats</h2>
+    <div class="stats-grid">
+      <div class="stat">
+        <div class="stat-label">uptime</div>
+        <div class="stat-value" id="stat-uptime">— <span class="stat-unit">%</span></div>
+        <div class="stat-sub muted small" id="stat-uptime-sub">of last 0 probes</div>
+      </div>
+      <div class="stat">
+        <div class="stat-label">request budget</div>
+        <div class="stat-value">
+          <span id="stat-budget-used">0</span><span class="muted">/60</span>
+          <span class="stat-unit">/min</span>
+        </div>
+        <div class="stat-sub muted small">slowapi limit per IP</div>
+        <div class="meter">
+          <div class="meter-fill" id="stat-budget-fill" style="width:0%"></div>
+        </div>
+      </div>
+    </div>
   </section>
 
   <section class="card">
