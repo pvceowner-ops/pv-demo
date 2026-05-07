@@ -193,35 +193,6 @@ flowchart LR
 
   subgraph DONE["✅ закрыто"]
     direction TB
-    d1["pv-api scaffold + auto-deploy"]:::done
-    d2["pv-console scaffold + orders show"]:::done
-    d3["Branch protection + repo settings + Dependabot"]:::done
-    d4["pip-audit + gitleaks в CI"]:::done
-    d5["tasks.py (invoke) — обоим репо"]:::done
-    d6["прод docker-compose + Caddy auto-TLS"]:::done
-    d7["VPS pv-api-prod (Vultr Amsterdam)"]:::done
-    d8["GitHub Secrets для deploy"]:::done
-    d9["Auth e2e test (4 сценария)"]:::done
-    d10["Idle stability (4h без leak)"]:::done
-    d11["Sentry DSN + verified delivery"]:::done
-    d12["Local backups (cron 03:00 UTC, retention 14d)"]:::done
-    d13["Backup recovery drill"]:::done
-    d14["Offsite backups → Vultr Object Storage"]:::done
-    d15["init: true (zombies fix, PR #13)"]:::done
-    d16["workflow_dispatch (manual rollback)"]:::done
-    d17["HSTS на api.pvlmtd.com (PR #15, max-age=1y)"]:::done
-    d18["pv-pg-backup.sh + cron в репо (PR #16)"]:::done
-    d19["Caddy healthcheck → admin API :2019 (PR #14)"]:::done
-    d20["create_app() Sentry-smoke в CI (PR #20)"]:::done
-    d21["HANDOVER.md в репо (PR #21)"]:::done
-    d22["Sentry max-out закрыт (PR #22 + #27)<br/><sub>6 integrations + attach_stacktrace + profiles knob</sub>"]:::done
-    d23["prod-deps-smoke CI guard (PR #27)<br/><sub>дев/прод env divergence закрыт</sub>"]:::done
-    d24["logrotate для pv-pg-backup.log (PR #28)"]:::done
-    d25["HANDOVER.md rebuild с постмортемом (PR #29)"]:::done
-    d26["Grafana monitoring stack live (PR #17 + #33)<br/><sub>node_exporter + cadvisor + alloy → Grafana Cloud Mimir</sub>"]:::done
-    d27["GHCR weekly retention workflow (PR #32)"]:::done
-    d28["Backup encryption opt-in via gpg (PR #31)"]:::done
-    d29["CORS + slowapi + container resource limits (PR #30)"]:::done
     d30["/healthz `version` field + PV_API_TAG passthrough (PR #34, #35)"]:::done
     d31["pv-demo public site live + GH Pages CI"]:::done
     d32["pv-demo v2 widgets: deploy SHA, uptime %, request budget"]:::done
@@ -232,7 +203,7 @@ flowchart LR
     d37["request_id middleware (PR #37, on auto-merge)<br/><sub>X-Request-ID echo + structlog/Sentry binding</sub>"]:::done
     d38["Telegram notify on deploy failure (PR #40, on auto-merge)"]:::done
     d39["Cloudflare DNS migration started (NS propagation 1-6h)<br/><sub>AAAA + CNAME demo.pvlmtd.com следом</sub>"]:::done
-    d1 ~~~ d2 ~~~ d3 ~~~ d4 ~~~ d5 ~~~ d6 ~~~ d7 ~~~ d8 ~~~ d9 ~~~ d10 ~~~ d11 ~~~ d12 ~~~ d13 ~~~ d14 ~~~ d15 ~~~ d16 ~~~ d17 ~~~ d18 ~~~ d19 ~~~ d20 ~~~ d21 ~~~ d22 ~~~ d23 ~~~ d24 ~~~ d25 ~~~ d26 ~~~ d27 ~~~ d28 ~~~ d29 ~~~ d30 ~~~ d31 ~~~ d32 ~~~ d33 ~~~ d34 ~~~ d35 ~~~ d36 ~~~ d37 ~~~ d38 ~~~ d39
+    d30 ~~~ d31 ~~~ d32 ~~~ d33 ~~~ d34 ~~~ d35 ~~~ d36 ~~~ d37 ~~~ d38 ~~~ d39
   end
 
   subgraph BACKLOG["🟡 в backlog (без блокеров)"]
@@ -254,6 +225,40 @@ flowchart LR
     bl1 ~~~ bl2 ~~~ bl3 ~~~ bl4 ~~~ bl5
   end
     </div>
+    <details style="margin-top:14px;color:var(--muted);">
+      <summary style="cursor:pointer;font-size:13px;">+29 закрытых раньше (нажми, чтобы раскрыть)</summary>
+      <ul style="margin-top:8px;line-height:1.7;font-size:13px;">
+        <li>d1 — pv-api scaffold + auto-deploy</li>
+        <li>d2 — pv-console scaffold + orders show</li>
+        <li>d3 — Branch protection + repo settings + Dependabot</li>
+        <li>d4 — pip-audit + gitleaks в CI</li>
+        <li>d5 — tasks.py (invoke) — обоим репо</li>
+        <li>d6 — прод docker-compose + Caddy auto-TLS</li>
+        <li>d7 — VPS pv-api-prod (Vultr Amsterdam)</li>
+        <li>d8 — GitHub Secrets для deploy</li>
+        <li>d9 — Auth e2e test (4 сценария)</li>
+        <li>d10 — Idle stability (4h без leak)</li>
+        <li>d11 — Sentry DSN + verified delivery</li>
+        <li>d12 — Local backups (cron 03:00 UTC, retention 14d)</li>
+        <li>d13 — Backup recovery drill</li>
+        <li>d14 — Offsite backups → Vultr Object Storage</li>
+        <li>d15 — init: true (zombies fix, PR #13)</li>
+        <li>d16 — workflow_dispatch (manual rollback)</li>
+        <li>d17 — HSTS на api.pvlmtd.com (PR #15, max-age=1y)</li>
+        <li>d18 — pv-pg-backup.sh + cron в репо (PR #16)</li>
+        <li>d19 — Caddy healthcheck → admin API :2019 (PR #14)</li>
+        <li>d20 — create_app() Sentry-smoke в CI (PR #20)</li>
+        <li>d21 — HANDOVER.md в репо (PR #21)</li>
+        <li>d22 — Sentry max-out закрыт (PR #22 + #27) <small style="color:var(--muted);">— 6 integrations + attach_stacktrace + profiles knob</small></li>
+        <li>d23 — prod-deps-smoke CI guard (PR #27) <small style="color:var(--muted);">— дев/прод env divergence закрыт</small></li>
+        <li>d24 — logrotate для pv-pg-backup.log (PR #28)</li>
+        <li>d25 — HANDOVER.md rebuild с постмортемом (PR #29)</li>
+        <li>d26 — Grafana monitoring stack live (PR #17 + #33) <small style="color:var(--muted);">— node_exporter + cadvisor + alloy → Grafana Cloud Mimir</small></li>
+        <li>d27 — GHCR weekly retention workflow (PR #32)</li>
+        <li>d28 — Backup encryption opt-in via gpg (PR #31)</li>
+        <li>d29 — CORS + slowapi + container resource limits (PR #30)</li>
+      </ul>
+    </details>
   </section>
 
   <section>
@@ -450,6 +455,40 @@ flowchart LR
     migrating:   "#fbbf24",
     deprecating: "#ef4444"
   };
+  const META = {
+    "user":        { desc: "Оператор стека (mrkne). Windows 11 + bash + PowerShell." },
+    "prc":         { desc: "Коллаборатор-агент: ведёт pv-shared, со-владеет pv-api." },
+    "pv-console":  { desc: "Typer + Textual CLI. Локальный SQLite, миграция на pv-api планируется.",
+                   urls: [{label:"GitHub", href:"https://github.com/pvceowner-ops/pv-console"}] },
+    "pv-api":      { desc: "FastAPI + asyncpg + redis-py. Прод на api.pvlmtd.com, 6 Sentry integrations.",
+                   urls: [{label:"GitHub", href:"https://github.com/pvceowner-ops/pv-api"},
+                          {label:"/healthz", href:"https://api.pvlmtd.com/healthz"},
+                          {label:"/agents/", href:"https://api.pvlmtd.com/agents/"}] },
+    "pv-shared":   { desc: "Pydantic DTO. v0.1.0 пилит PRC.",
+                   urls: [{label:"GitHub", href:"https://github.com/pvceowner-ops/pv-shared"}] },
+    "pv-demo":     { desc: "Публичная демо-страница. GH Pages auto-deploy через pages.yml.",
+                   urls: [{label:"GitHub", href:"https://github.com/pvceowner-ops/pv-demo"},
+                          {label:"Live (GH Pages)", href:"https://pvceowner-ops.github.io/pv-demo/"}] },
+    "pv-os-labs":  { desc: "Personal AI Environment, adaptation acme-labs (private)." },
+    "github":      { desc: "GitHub Actions: workflows test / build-deploy / pages." },
+    "ghcr":        { desc: "ghcr.io/pvceowner-ops/pv-api — образ pv-api по SHA tag." },
+    "vps":         { desc: "Vultr Cloud Compute, Amsterdam NL. 199.247.24.123. 2 vCPU / 2 GB / 60 GB NVMe." },
+    "caddy":       { desc: "Caddy 2-alpine. Auto Let's Encrypt. HSTS max-age=1y." },
+    "pv-api-c":    { desc: "Контейнер pv-api на Alpine multi-stage (~150 MB)." },
+    "postgres":    { desc: "Postgres 16-alpine. Бэкап cron 03:00 UTC + offsite Vultr Object Storage." },
+    "redis":       { desc: "Redis 7-alpine. maxmemory=128mb, allkeys-lru." },
+    "node-exp":    { desc: "node_exporter — host metrics для Grafana." },
+    "cadvisor":    { desc: "cadvisor — per-container metrics для Grafana." },
+    "alloy":       { desc: "Grafana Alloy — scrape + remote_write в Mimir." },
+    "vultr-os":    { desc: "Vultr Object Storage Amsterdam, bucket pv-backups, retention 14d." },
+    "grafana":     { desc: "Grafana Cloud, free tier.",
+                   urls: [{label:"Stack", href:"https://pvceownerops.grafana.net"}] },
+    "sentry":      { desc: "Sentry org pvceowner-ops, project pv-api. 6 integrations." },
+    "squarespace": { desc: "Domain registrar pvlmtd.com. Депрекейтится — NS уезжают на CF." },
+    "cloudflare":  { desc: "DNS provider (free tier). Propagation 1-6h." },
+    "gh-pages":    { desc: "GitHub Pages для pv-demo. Custom demo.pvlmtd.com планируется." },
+    "crypto-bot":  { desc: "Запланированный бот с криптозащитой. Метод не выбран." }
+  };
 
   const svg = d3.select(container)
     .append("svg")
@@ -512,11 +551,7 @@ flowchart LR
     .selectAll("g")
     .data(data.nodes)
     .join("g")
-    .style("cursor", "grab")
-    .call(d3.drag()
-      .on("start", (e, d) => { if (!e.active) sim.alphaTarget(0.3).restart(); d.fx = d.x; d.fy = d.y; })
-      .on("drag",  (e, d) => { d.fx = e.x; d.fy = e.y; })
-      .on("end",   (e, d) => { if (!e.active) sim.alphaTarget(0); d.fx = null; d.fy = null; }));
+    .style("cursor", "grab");
 
   node.append("circle")
     .attr("r", d => (d.group === "infra" || d.group === "human") ? 16 : 13)
@@ -539,6 +574,120 @@ flowchart LR
   node.append("title").text(d =>
     `${d.label}\nгруппа: ${d.group}` + (d.status ? `\nстатус: ${d.status}` : '')
   );
+
+  const drawer = document.getElementById("d3-drawer");
+  const drawerClose = document.getElementById("d3-drawer-close");
+  const drawerTitle = document.getElementById("d3-drawer-title");
+  const drawerMeta = document.getElementById("d3-drawer-meta");
+  const drawerDesc = document.getElementById("d3-drawer-desc");
+  const drawerIn = document.getElementById("d3-drawer-in");
+  const drawerOut = document.getElementById("d3-drawer-out");
+  const drawerLinks = document.getElementById("d3-drawer-links");
+
+  const idToNode = new Map(data.nodes.map(n => [n.id, n]));
+  const edgeList = data.links.map(l => ({
+    source: typeof l.source === "string" ? l.source : l.source.id,
+    target: typeof l.target === "string" ? l.target : l.target.id,
+    label: l.label || "",
+    kind: l.kind || "live"
+  }));
+  const neighbors = new Map(data.nodes.map(n => [n.id, new Set([n.id])]));
+  edgeList.forEach(l => {
+    neighbors.get(l.source).add(l.target);
+    neighbors.get(l.target).add(l.source);
+  });
+  const esc = (s = "") => String(s).replaceAll("&", "&amp;").replaceAll("<", "&lt;").replaceAll(">", "&gt;");
+  const sectionTitleStyle = "font-size:10px;color:#94a3b8;letter-spacing:0.4px;text-transform:uppercase;margin-bottom:6px;";
+  let selectedId = null;
+  let wasDragged = false;
+
+  function updateDim() {
+    if (!selectedId) {
+      node.style("opacity", 1);
+      link.style("stroke-opacity", 0.75);
+      return;
+    }
+    const near = neighbors.get(selectedId) || new Set([selectedId]);
+    node.style("opacity", d => near.has(d.id) ? 1 : 0.18);
+    link.style("stroke-opacity", d => {
+      const src = typeof d.source === "object" ? d.source.id : d.source;
+      const dst = typeof d.target === "object" ? d.target.id : d.target;
+      return (src === selectedId || dst === selectedId) ? 0.95 : 0.1;
+    });
+  }
+
+  function closeDrawer() {
+    selectedId = null;
+    if (drawer) drawer.style.transform = "translateX(100%)";
+    updateDim();
+  }
+
+  function renderEdgeSection(title, edges, sign, peerKey) {
+    if (!edges.length) {
+      return `<div style="${sectionTitleStyle}">${title}</div><div style="font-size:12px;color:var(--muted);">—</div>`;
+    }
+    const rows = edges.map(e => {
+      const peer = idToNode.get(e[peerKey]);
+      const peerLabel = peer ? peer.label : e[peerKey];
+      return `<div style="font-size:12px;line-height:1.5;margin-bottom:4px;"><span style="color:var(--accent);">${sign}</span> ${esc(peerLabel)} — ${esc(e.label)} <span style="color:var(--muted);">[${esc(e.kind)}]</span></div>`;
+    }).join("");
+    return `<div style="${sectionTitleStyle}">${title}</div>${rows}`;
+  }
+
+  function openDrawer(nodeDatum) {
+    const meta = META[nodeDatum.id] || {};
+    const inbound = edgeList.filter(e => e.target === nodeDatum.id);
+    const outbound = edgeList.filter(e => e.source === nodeDatum.id);
+    if (drawerTitle) drawerTitle.textContent = nodeDatum.label;
+    if (drawerMeta) drawerMeta.textContent = `${nodeDatum.group} · ${nodeDatum.status || "live"}`;
+    if (drawerDesc) drawerDesc.textContent = meta.desc || "";
+    if (drawerIn) drawerIn.innerHTML = renderEdgeSection("Входящие", inbound, "←", "source");
+    if (drawerOut) drawerOut.innerHTML = renderEdgeSection("Исходящие", outbound, "→", "target");
+    if (drawerLinks) {
+      if (meta.urls && meta.urls.length) {
+        drawerLinks.innerHTML = `<div style="${sectionTitleStyle}">Ссылки</div>` + meta.urls.map(u =>
+          `<div style="font-size:12px;line-height:1.6;"><a target="_blank" rel="noreferrer" href="${esc(u.href)}" style="color:var(--accent);">${esc(u.label)}</a></div>`
+        ).join("");
+      } else {
+        drawerLinks.innerHTML = "";
+      }
+    }
+    selectedId = nodeDatum.id;
+    if (drawer) drawer.style.transform = "translateX(0)";
+    updateDim();
+  }
+
+  node.on("click", (e, d) => {
+    e.stopPropagation();
+    if (wasDragged) return;
+    if (selectedId === d.id) {
+      closeDrawer();
+      return;
+    }
+    openDrawer(d);
+  });
+
+  if (drawerClose) drawerClose.addEventListener("click", closeDrawer);
+  svg.on("click", () => closeDrawer());
+
+  node.call(d3.drag()
+    .on("start", (e, d) => {
+      wasDragged = false;
+      if (!e.active) sim.alphaTarget(0.3).restart();
+      d.fx = d.x;
+      d.fy = d.y;
+    })
+    .on("drag", (e, d) => {
+      wasDragged = true;
+      d.fx = e.x;
+      d.fy = e.y;
+    })
+    .on("end", (e, d) => {
+      if (!e.active) sim.alphaTarget(0);
+      d.fx = null;
+      d.fy = null;
+      setTimeout(() => { wasDragged = false; }, 0);
+    }));
 
   sim.on("tick", () => {
     data.nodes.forEach(d => {
